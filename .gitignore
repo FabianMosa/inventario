@@ -36,3 +36,12 @@ coverage/
 # Documentos de IA
 AGENTS.md
 STACK.md
+
+# Carpetas de IA    AI Dev Team
+ai-team/
+
+# Carpeta de Cursor
+.cursor/
+
+# Carpeta de Cursorrules
+.cursorrules/
