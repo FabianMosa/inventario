@@ -1,0 +1,7 @@
+{
+  "aiRules": [
+    ".cursor/rules/dev-team.md",
+    ".cursor/rules/workflow.md",
+    ".cursor/rules/roles.md"
+  ]
+}

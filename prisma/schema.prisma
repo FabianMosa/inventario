@@ -1,0 +1,96 @@
+// Esquema de inventario para PostgreSQL (Railway). Sin autenticación: demo de portafolio.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  items     Item[]
+  createdAt DateTime @default(now())
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  code      String?
+  // Saldos y líneas de movimiento referencian esta ubicación
+  balances  StockBalance[]
+  linesFrom MovementLine[] @relation("LineFrom")
+  linesTo   MovementLine[] @relation("LineTo")
+  createdAt DateTime @default(now())
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  sku         String   @unique
+  name        String
+  description String?
+  unit        String   @default("u") // unidad de medida (u, kg, caja, …)
+  minStock    Int      @default(0)
+  maxStock    Int?
+  active      Boolean  @default(true)
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  balances    StockBalance[]
+  lines       MovementLine[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([active])
+}
+
+// Saldo agregado por artículo y ubicación (no permite filas duplicadas)
+model StockBalance {
+  id         String   @id @default(cuid())
+  itemId     String
+  locationId String
+  quantity   Int      @default(0)
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, locationId])
+  @@index([locationId])
+}
+
+enum MovementType {
+  IN // entrada a ubicación
+  OUT // salida desde ubicación
+  TRANSFER // entre ubicaciones
+  ADJUST // ajuste (+/-) en una ubicación
+}
+
+model Movement {
+  id        String         @id @default(cuid())
+  type      MovementType
+  reference String?
+  notes     String?
+  lines     MovementLine[]
+  createdAt DateTime       @default(now())
+
+  @@index([createdAt])
+}
+
+model MovementLine {
+  id             String    @id @default(cuid())
+  movementId     String
+  itemId         String
+  // IN: toLocationId | OUT: fromLocationId | TRANSFER: ambos | ADJUST: fromLocationId + cantidad con signo
+  quantity       Int
+  fromLocationId String?
+  toLocationId   String?
+  movement       Movement  @relation(fields: [movementId], references: [id], onDelete: Cascade)
+  item           Item      @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  fromLocation   Location? @relation("LineFrom", fields: [fromLocationId], references: [id], onDelete: Restrict)
+  toLocation     Location? @relation("LineTo", fields: [toLocationId], references: [id], onDelete: Restrict)
+
+  @@index([movementId])
+  @@index([itemId])
+}
