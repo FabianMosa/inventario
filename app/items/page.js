@@ -78,7 +78,8 @@ export default async function ItemsPage() {
                     <td className="hidden px-4 py-3.5 text-slate-600 sm:table-cell">
                       {item.category?.name ?? "—"}
                     </td>
-                    <td className="px-4 py-3.5">
+                    {/* Total: solo cantidad agregada; la unidad está en el detalle del artículo */}
+                    <td className="px-4 py-3.5 tabular-nums">
                       <span
                         className={
                           low
@@ -87,8 +88,7 @@ export default async function ItemsPage() {
                         }
                       >
                         {total}
-                      </span>{" "}
-                      <span className="text-slate-500">{item.unit}</span>
+                      </span>
                     </td>
                     <td className="px-4 py-3.5 text-slate-600">
                       {item.minStock}

@@ -15,7 +15,8 @@ export function ItemForm({ mode = "new", itemId, initial }) {
   const [sku, setSku] = useState(initial?.sku ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [unit, setUnit] = useState(initial?.unit ?? "u");
+  // En alta, el campo va vacío; la API sigue usando "u" si el usuario no escribe nada
+  const [unit, setUnit] = useState(initial?.unit ?? "");
   const [minStock, setMinStock] = useState(initial?.minStock ?? 0);
   const [maxStock, setMaxStock] = useState(initial?.maxStock ?? "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");

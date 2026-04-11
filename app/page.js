@@ -43,9 +43,8 @@ export default async function HomePage() {
             Controla tu stock con claridad
           </h1>
           <p className="mt-3 text-base leading-relaxed text-slate-600 sm:text-lg">
-            Panel de inventario sin login: artículos, ubicaciones y movimientos en
-            una interfaz rápida y lista para desplegar con PostgreSQL (por ejemplo en
-            Railway).
+            Panel de inventario: artículos, ubicaciones y movimientos en
+            una interfaz rápida y lista para desplegar.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/items" className="ui-btn-primary">
