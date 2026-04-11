@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/PageHeader";
+import { isDemoReadonly } from "@/lib/demo";
 
 /** Listado de artículos con stock total y enlaces a detalle (SSR). */
 export default async function ItemsPage() {
+  const readonly = isDemoReadonly();
   const items = await prisma.item.findMany({
     where: { active: true },
     orderBy: { name: "asc" },
@@ -19,9 +21,15 @@ export default async function ItemsPage() {
         title="Artículos"
         description="Catálogo y saldos por ubicación"
         actions={
-          <Link href="/items/new" className="ui-btn-primary">
-            Nuevo artículo
-          </Link>
+          readonly ? (
+            <span className="rounded-xl border border-slate-200/90 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 sm:text-sm">
+              Solo lectura
+            </span>
+          ) : (
+            <Link href="/items/new" className="ui-btn-primary">
+              Nuevo artículo
+            </Link>
+          )
         }
       />
 

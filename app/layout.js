@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { DemoReadonlyBanner } from "@/components/DemoReadonlyBanner";
 import { Nav } from "@/components/Nav";
 
 // Evita prerender estático que ejecutaría Prisma sin DATABASE_URL en el build (CI/Railway)
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es" className={fontSans.variable}>
       <body className={`${fontSans.className} pb-16 font-sans`}>
+        <DemoReadonlyBanner />
         <Nav />
         <main className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
           {children}

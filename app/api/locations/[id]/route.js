@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jsonError } from "@/lib/http";
+import { jsonError, rejectIfDemoReadonly } from "@/lib/http";
 
 export async function PATCH(request, context) {
+  const denied = rejectIfDemoReadonly();
+  if (denied) return denied;
+
   const { id } = await context.params;
   let body;
   try {
@@ -35,6 +38,9 @@ export async function PATCH(request, context) {
 }
 
 export async function DELETE(_request, context) {
+  const denied = rejectIfDemoReadonly();
+  if (denied) return denied;
+
   const { id } = await context.params;
   const balances = await prisma.stockBalance.count({ where: { locationId: id } });
   if (balances > 0) {

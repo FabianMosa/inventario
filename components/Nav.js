@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isDemoReadonly } from "@/lib/demo";
 
-const links = [
+const allLinks = [
   { href: "/", label: "Inicio" },
   { href: "/items", label: "Artículos" },
   { href: "/movements", label: "Movimientos" },
@@ -11,6 +12,14 @@ const links = [
   { href: "/categories", label: "Categorías" },
   { href: "/locations", label: "Ubicaciones" },
 ];
+
+/** En solo lectura se oculta el atajo a alta de movimiento (la ruta redirige igual). */
+function getNavLinks() {
+  if (isDemoReadonly()) {
+    return allLinks.filter((l) => l.href !== "/movements/new");
+  }
+  return allLinks;
+}
 
 /** Indica enlace activo: home exacto; resto coincide con ruta o subrutas */
 function isActive(pathname, href) {
@@ -22,6 +31,7 @@ function isActive(pathname, href) {
 /** Barra de navegación con blur, sombra suave y pill del ítem actual (responsive). */
 export function Nav() {
   const pathname = usePathname();
+  const links = getNavLinks();
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 shadow-soft backdrop-blur-xl">

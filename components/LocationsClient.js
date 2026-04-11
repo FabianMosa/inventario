@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isDemoReadonly } from "@/lib/demo";
 
 /** Listado y alta de ubicaciones / almacenes */
 export function LocationsClient() {
+  const readonly = isDemoReadonly();
   const [rows, setRows] = useState([]);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -21,6 +23,7 @@ export function LocationsClient() {
 
   async function onCreate(e) {
     e.preventDefault();
+    if (readonly) return;
     setError("");
     setLoading(true);
     try {
@@ -45,6 +48,7 @@ export function LocationsClient() {
   }
 
   async function onDelete(id) {
+    if (readonly) return;
     if (!confirm("¿Eliminar ubicación?")) return;
     const res = await fetch(`/api/locations/${id}`, { method: "DELETE" });
     if (!res.ok) {
@@ -57,6 +61,12 @@ export function LocationsClient() {
 
   return (
     <div className="space-y-6">
+      {readonly ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+          Demo en <strong>solo lectura</strong>: no se pueden crear ni eliminar
+          ubicaciones.
+        </p>
+      ) : null}
       <form
         onSubmit={onCreate}
         className="ui-card grid gap-4 p-5 sm:grid-cols-3"
@@ -68,6 +78,7 @@ export function LocationsClient() {
             className="ui-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            disabled={readonly}
           />
         </label>
         <label className="block sm:col-span-1">
@@ -77,12 +88,13 @@ export function LocationsClient() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="Opcional"
+            disabled={readonly}
           />
         </label>
         <div className="flex items-end sm:col-span-1">
           <button
             type="submit"
-            disabled={loading}
+            disabled={readonly || loading}
             className="ui-btn-primary w-full disabled:opacity-50"
           >
             Añadir ubicación
@@ -112,13 +124,17 @@ export function LocationsClient() {
                   {l.code ?? "—"}
                 </td>
                 <td className="px-4 py-3.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onDelete(l.id)}
-                    className="text-sm font-medium text-red-600 hover:underline"
-                  >
-                    Eliminar
-                  </button>
+                  {readonly ? (
+                    <span className="text-xs text-slate-400">—</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(l.id)}
+                      className="text-sm font-medium text-red-600 hover:underline"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

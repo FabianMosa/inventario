@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jsonError } from "@/lib/http";
+import { jsonError, rejectIfDemoReadonly } from "@/lib/http";
 
 export async function GET(_request, context) {
   const { id } = await context.params;
@@ -22,6 +22,9 @@ export async function GET(_request, context) {
 }
 
 export async function PATCH(request, context) {
+  const denied = rejectIfDemoReadonly();
+  if (denied) return denied;
+
   const { id } = await context.params;
   let body;
   try {
@@ -89,6 +92,9 @@ export async function PATCH(request, context) {
 }
 
 export async function DELETE(_request, context) {
+  const denied = rejectIfDemoReadonly();
+  if (denied) return denied;
+
   const { id } = await context.params;
   const lines = await prisma.movementLine.count({ where: { itemId: id } });
   if (lines > 0) {

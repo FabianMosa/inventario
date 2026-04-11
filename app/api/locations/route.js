@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jsonError } from "@/lib/http";
+import { jsonError, rejectIfDemoReadonly } from "@/lib/http";
 
 export async function GET() {
   const rows = await prisma.location.findMany({
@@ -10,6 +10,9 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const denied = rejectIfDemoReadonly();
+  if (denied) return denied;
+
   let body;
   try {
     body = await request.json();

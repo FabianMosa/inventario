@@ -2,12 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { isDemoReadonly } from "@/lib/demo";
 
 /** Elimina artículo solo si no tiene movimientos (API devuelve 409 si aplica). */
 export function DeleteItemButton({ itemId }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const readonly = isDemoReadonly();
+
+  if (readonly) return null;
 
   async function onDelete() {
     if (!confirm("¿Eliminar este artículo y sus saldos?")) return;

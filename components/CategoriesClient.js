@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isDemoReadonly } from "@/lib/demo";
 
 /** CRUD ligero de categorías vía API (demo sin login). */
 export function CategoriesClient() {
+  const readonly = isDemoReadonly();
   const [rows, setRows] = useState([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,6 +22,7 @@ export function CategoriesClient() {
 
   async function onCreate(e) {
     e.preventDefault();
+    if (readonly) return;
     setError("");
     setLoading(true);
     try {
@@ -43,6 +46,7 @@ export function CategoriesClient() {
   }
 
   async function onDelete(id) {
+    if (readonly) return;
     if (!confirm("¿Eliminar categoría?")) return;
     const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
     if (!res.ok) {
@@ -55,6 +59,12 @@ export function CategoriesClient() {
 
   return (
     <div className="space-y-6">
+      {readonly ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+          Demo en <strong>solo lectura</strong>: no se pueden crear ni eliminar
+          categorías.
+        </p>
+      ) : null}
       <form
         onSubmit={onCreate}
         className="ui-card flex flex-col gap-4 p-5 sm:flex-row sm:items-end"
@@ -67,11 +77,12 @@ export function CategoriesClient() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Nombre"
             required
+            disabled={readonly}
           />
         </label>
         <button
           type="submit"
-          disabled={loading}
+          disabled={readonly || loading}
           className="ui-btn-primary shrink-0 px-6 disabled:opacity-50"
         >
           Añadir
@@ -100,13 +111,17 @@ export function CategoriesClient() {
                   {c._count?.items ?? "—"}
                 </td>
                 <td className="px-4 py-3.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onDelete(c.id)}
-                    className="text-sm font-medium text-red-600 hover:underline"
-                  >
-                    Eliminar
-                  </button>
+                  {readonly ? (
+                    <span className="text-xs text-slate-400">—</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(c.id)}
+                      className="text-sm font-medium text-red-600 hover:underline"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

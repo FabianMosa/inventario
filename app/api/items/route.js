@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jsonError } from "@/lib/http";
+import { jsonError, rejectIfDemoReadonly } from "@/lib/http";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -35,6 +35,9 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const denied = rejectIfDemoReadonly();
+  if (denied) return denied;
+
   let body;
   try {
     body = await request.json();

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { isDemoReadonly } from "@/lib/demo";
 
 /**
  * Formulario crear/editar artículo. Consume API REST pública (demo sin login).
  * @param {{ mode?: 'new' | 'edit', itemId?: string, initial?: object }} props
  */
 export function ItemForm({ mode = "new", itemId, initial }) {
+  const readonly = isDemoReadonly();
   const router = useRouter();
   const [categories, setCategories] = useState([]);
   const [sku, setSku] = useState(initial?.sku ?? "");
@@ -30,6 +32,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
 
   async function onSubmit(e) {
     e.preventDefault();
+    if (readonly) return;
     setError("");
     setLoading(true);
     const payload = {
@@ -77,6 +80,13 @@ export function ItemForm({ mode = "new", itemId, initial }) {
         </p>
       ) : null}
 
+      {readonly ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+          Esta demo está en <strong>solo lectura</strong>. No se pueden crear ni editar
+          artículos desde el formulario.
+        </p>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block sm:col-span-1">
           <span className="ui-label">SKU *</span>
@@ -85,7 +95,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
             className="ui-input"
             value={sku}
             onChange={(e) => setSku(e.target.value)}
-            disabled={mode === "edit"}
+            disabled={readonly || mode === "edit"}
             title="El SKU no se puede cambiar si hay movimientos asociados"
           />
         </label>
@@ -96,6 +106,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
             placeholder="u, kg, caja…"
+            disabled={readonly}
           />
         </label>
       </div>
@@ -107,6 +118,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
           className="ui-input"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          disabled={readonly}
         />
       </label>
 
@@ -117,6 +129,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
           rows={3}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          disabled={readonly}
         />
       </label>
 
@@ -129,6 +142,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
             className="ui-input"
             value={minStock}
             onChange={(e) => setMinStock(e.target.value)}
+            disabled={readonly}
           />
         </label>
         <label className="block">
@@ -140,6 +154,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
             value={maxStock}
             onChange={(e) => setMaxStock(e.target.value)}
             placeholder="Opcional"
+            disabled={readonly}
           />
         </label>
       </div>
@@ -150,6 +165,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
           className="ui-input"
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
+          disabled={readonly}
         >
           <option value="">— Sin categoría —</option>
           {categories.map((c) => (
@@ -166,6 +182,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
             type="checkbox"
             checked={active}
             onChange={(e) => setActive(e.target.checked)}
+            disabled={readonly}
           />
           Activo
         </label>
@@ -173,7 +190,7 @@ export function ItemForm({ mode = "new", itemId, initial }) {
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={readonly || loading}
         className="ui-btn-primary w-full sm:w-auto sm:px-10"
       >
         {loading ? "Guardando…" : mode === "new" ? "Crear artículo" : "Guardar cambios"}

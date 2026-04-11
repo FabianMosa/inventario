@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { isDemoReadonly } from "@/lib/demo";
 
 const TYPES = [
   { value: "IN", label: "Entrada (IN)" },
@@ -14,6 +15,7 @@ const TYPES = [
  * Registra un movimiento de una línea (suficiente para demo de portafolio).
  */
 export function MovementForm() {
+  const readonly = isDemoReadonly();
   const router = useRouter();
   const [items, setItems] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -59,6 +61,7 @@ export function MovementForm() {
 
   async function onSubmit(e) {
     e.preventDefault();
+    if (readonly) return;
     setError("");
     if (!itemId) {
       setError("Selecciona un artículo");
@@ -130,12 +133,20 @@ export function MovementForm() {
         </p>
       ) : null}
 
+      {readonly ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+          Esta demo está en <strong>solo lectura</strong>. Los movimientos de ejemplo
+          vienen del seed de la base de datos.
+        </p>
+      ) : null}
+
       <label className="block">
         <span className="ui-label">Tipo *</span>
         <select
           className="ui-input"
           value={type}
           onChange={(e) => setType(e.target.value)}
+          disabled={readonly}
         >
           {TYPES.map((t) => (
             <option key={t.value} value={t.value}>
@@ -152,6 +163,7 @@ export function MovementForm() {
           className="ui-input"
           value={itemId}
           onChange={(e) => setItemId(e.target.value)}
+          disabled={readonly}
         >
           <option value="">— Seleccionar —</option>
           {items.map((i) => (
@@ -177,6 +189,7 @@ export function MovementForm() {
           className="ui-input"
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
+          disabled={readonly}
         />
       </label>
 
@@ -189,6 +202,7 @@ export function MovementForm() {
             className="ui-input"
             value={fromLocationId}
             onChange={(e) => setFromLocationId(e.target.value)}
+            disabled={readonly}
           >
             <option value="">— Seleccionar —</option>
             {locations.map((l) => (
@@ -207,6 +221,7 @@ export function MovementForm() {
             className="ui-input"
             value={toLocationId}
             onChange={(e) => setToLocationId(e.target.value)}
+            disabled={readonly}
           >
             <option value="">— Seleccionar —</option>
             {locations.map((l) => (
@@ -225,6 +240,7 @@ export function MovementForm() {
           value={reference}
           onChange={(e) => setReference(e.target.value)}
           placeholder="OC-123, factura, etc."
+          disabled={readonly}
         />
       </label>
 
@@ -235,12 +251,13 @@ export function MovementForm() {
           rows={2}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          disabled={readonly}
         />
       </label>
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={readonly || loading}
         className="ui-btn-primary w-full sm:w-auto sm:px-10"
       >
         {loading ? "Registrando…" : "Registrar movimiento"}

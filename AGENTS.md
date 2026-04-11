@@ -32,9 +32,10 @@ El layout usa **`export const dynamic = "force-dynamic"`** en `app/layout.js` pa
 | Páginas y layouts | `app/` — la inicio (`app/page.js`) combina mensaje para visitante/evaluador, mosaico de enlaces y datos en vivo |
 | API REST | `app/api/**/route.js` |
 | Cliente Prisma singleton | `lib/prisma.js` |
+| Demo solo lectura (UI + API) | `lib/demo.js` (`NEXT_PUBLIC_DEMO_READONLY`), `rejectIfDemoReadonly()` en `lib/http.js` |
 | Reglas transaccionales de stock | `lib/movements.js` — toda mutación de saldos por movimientos debe pasar por aquí dentro de `$transaction` |
 | Esquema y migraciones | `prisma/schema.prisma`, `prisma/migrations/` |
-| Seed demo | `prisma/seed.js` |
+| Seed demo | `prisma/seed.js` — maestros + artículos `SKU-DEMO-*`; al re-ejecutar borra y recrea movimientos/saldos solo de esos SKUs (lógica de stock duplicada y alineada con `lib/movements.js`) |
 | Componentes React cliente/servidor | `components/` |
 
 ## Convenciones al tocar código

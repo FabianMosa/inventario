@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/PageHeader";
+import { isDemoReadonly } from "@/lib/demo";
 
 /** Historial de movimientos con líneas expandidas */
 export default async function MovementsPage() {
+  const readonly = isDemoReadonly();
   const movements = await prisma.movement.findMany({
     take: 40,
     orderBy: { createdAt: "desc" },
@@ -24,19 +26,35 @@ export default async function MovementsPage() {
         title="Movimientos"
         description="Últimos registros del inventario"
         actions={
-          <Link href="/movements/new" className="ui-btn-primary">
-            Nuevo movimiento
-          </Link>
+          readonly ? (
+            <span className="rounded-xl border border-slate-200/90 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 sm:text-sm">
+              Solo lectura
+            </span>
+          ) : (
+            <Link href="/movements/new" className="ui-btn-primary">
+              Nuevo movimiento
+            </Link>
+          )
         }
       />
 
       <div className="space-y-5">
         {movements.length === 0 ? (
           <div className="ui-card px-6 py-14 text-center text-slate-600">
-            No hay movimientos.{" "}
-            <Link href="/movements/new" className="ui-link">
-              Registrar el primero
-            </Link>
+            No hay movimientos.
+            {readonly ? (
+              <span className="mt-2 block text-sm text-slate-500">
+                Ejecuta <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">npm run db:seed</code> para
+                cargar datos de demostración.
+              </span>
+            ) : (
+              <>
+                {" "}
+                <Link href="/movements/new" className="ui-link">
+                  Registrar el primero
+                </Link>
+              </>
+            )}
           </div>
         ) : (
           movements.map((m) => (

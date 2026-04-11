@@ -19,6 +19,8 @@ Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
 
 2. Edita `.env` y asigna `DATABASE_URL` a tu instancia PostgreSQL.
 
+   Opcional: **`NEXT_PUBLIC_DEMO_READONLY`** (`true` / `1` = solo lectura: API de escritura bloqueada y formularios deshabilitados; recomendado en demos públicas). Para desarrollar con altas y cambios, usa `false` o elimina la variable y reinicia el servidor.
+
 3. Instala dependencias y aplica el esquema:
 
    ```bash
@@ -59,7 +61,7 @@ Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
 | `npm start`          | Servidor producción                           |
 | `npm run db:migrate` | `prisma migrate dev` (desarrollo)             |
 | `npm run db:push`    | `prisma db push` (prototipos rápidos)         |
-| `npm run db:seed`    | Datos de demostración                         |
+| `npm run db:seed`    | Datos demo (10 artículos, 4 ubicaciones, 8 movimientos; resetea solo SKUs `SKU-DEMO-*`) |
 
 ## Funcionalidad
 
@@ -79,6 +81,7 @@ Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
 - `prisma/schema.prisma` — modelo de datos.
 - `lib/prisma.js` — cliente Prisma singleton.
 - `lib/movements.js` — lógica transaccional de inventario.
+- `lib/demo.js` — flag `isDemoReadonly()` según `NEXT_PUBLIC_DEMO_READONLY`.
 
 ## Cursor y Engram (opcional)
 
@@ -86,4 +89,4 @@ Memoria MCP: `.cursor/mcp.json`. Protocolo de herramientas `mem_*` (búsqueda, g
 
 ## Nota de seguridad
 
-Al no haber login, cualquier visitante puede usar la API si el sitio es público. Úsalo solo como **portafolio** o protege el despliegue (por ejemplo, acceso restringido en Railway).
+Al no haber login, cualquier visitante puede usar la API si el sitio es público. Úsalo solo como **portafolio** o protege el despliegue (por ejemplo, acceso restringido en Railway). Con **`NEXT_PUBLIC_DEMO_READONLY=true`** las rutas de escritura de la API responden **403** y la UI no permite enviar formularios (no sustituye un firewall; reduce cambios accidentales en la demo).
