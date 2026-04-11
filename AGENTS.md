@@ -21,7 +21,7 @@ Este documento orienta a **agentes de IA** y a desarrolladores humanos que traba
 3. `npx prisma migrate deploy` (o `npm run db:migrate` en desarrollo iterativo)
 4. `npm run db:seed` (datos demo opcional)
 5. `npm run dev` — http://localhost:3000
-6. Antes de un PR o entrega: `npm run lint` y `npm run build`
+6. Antes de un PR o entrega: `npm run test`, `npm run lint` y `npm run build`
 
 El layout usa **`export const dynamic = "force-dynamic"`** en `app/layout.js` para evitar prerender que ejecute Prisma sin base de datos en CI/build.
 
@@ -37,6 +37,7 @@ El layout usa **`export const dynamic = "force-dynamic"`** en `app/layout.js` pa
 | Esquema y migraciones | `prisma/schema.prisma`, `prisma/migrations/` |
 | Seed demo | `prisma/seed.js` — maestros + artículos `SKU-DEMO-*`; al re-ejecutar borra y recrea movimientos/saldos solo de esos SKUs (lógica de stock duplicada y alineada con `lib/movements.js`) |
 | Componentes React cliente/servidor | `components/` |
+| Tests automatizados (Vitest, Node) | `tests/**/*.test.js` — lógica en `lib/` con mocks (p. ej. saldos en memoria); no requiere PostgreSQL |
 
 ## Convenciones al tocar código
 

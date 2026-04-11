@@ -62,6 +62,8 @@ Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
 | `npm run db:migrate` | `prisma migrate dev` (desarrollo)             |
 | `npm run db:push`    | `prisma db push` (prototipos rápidos)         |
 | `npm run db:seed`    | Datos demo (10 artículos, 4 ubicaciones, 8 movimientos; resetea solo SKUs `SKU-DEMO-*`) |
+| `npm run test`       | Vitest en modo CI (`vitest run`) — reglas de stock (`lib/movements.js`) y demo (`lib/demo.js`) |
+| `npm run test:watch` | Vitest en modo interactivo (desarrollo) |
 
 ## Funcionalidad
 
@@ -82,6 +84,7 @@ Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
 - `lib/prisma.js` — cliente Prisma singleton.
 - `lib/movements.js` — lógica transaccional de inventario.
 - `lib/demo.js` — flag `isDemoReadonly()` según `NEXT_PUBLIC_DEMO_READONLY`.
+- `tests/` — pruebas Vitest (`npm run test`); ver `vitest.config.mjs`.
 
 ## Cursor y Engram (opcional)
 
