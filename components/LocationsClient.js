@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isDemoReadonly } from "@/lib/demo";
+import { useToast } from "@/components/ToastProvider";
 
 /** Listado y alta de ubicaciones / almacenes */
 export function LocationsClient() {
@@ -11,6 +12,7 @@ export function LocationsClient() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { showToast } = useToast();
 
   async function load() {
     const r = await fetch("/api/locations");
@@ -39,6 +41,7 @@ export function LocationsClient() {
       }
       setName("");
       setCode("");
+      showToast("Ubicación creada", "success");
       await load();
     } catch {
       setError("Error de red");
@@ -53,9 +56,10 @@ export function LocationsClient() {
     const res = await fetch(`/api/locations/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      alert(d.error || "No se pudo eliminar");
+      showToast(d.error || "No se pudo eliminar", "error");
       return;
     }
+    showToast("Ubicación eliminada", "success");
     await load();
   }
 

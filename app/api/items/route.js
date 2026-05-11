@@ -18,6 +18,7 @@ import {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const q = clean_search_query(searchParams.get("q"));
+  const category_id = clean_string(searchParams.get("categoryId"), 64, "categoryId");
   const where = {
     active: true,
     ...(q
@@ -29,6 +30,7 @@ export async function GET(request) {
           ],
         }
       : {}),
+    ...(category_id ? { categoryId: category_id } : {}),
   };
 
   const rows = await prisma.item.findMany({

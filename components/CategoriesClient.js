@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isDemoReadonly } from "@/lib/demo";
+import { useToast } from "@/components/ToastProvider";
 
 /** CRUD ligero de categorías vía API (demo sin login). */
 export function CategoriesClient() {
@@ -10,6 +11,7 @@ export function CategoriesClient() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { showToast } = useToast();
 
   async function load() {
     const r = await fetch("/api/categories");
@@ -37,6 +39,7 @@ export function CategoriesClient() {
         return;
       }
       setName("");
+      showToast("Categoría creada", "success");
       await load();
     } catch {
       setError("Error de red");
@@ -51,9 +54,10 @@ export function CategoriesClient() {
     const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      alert(d.error || "No se pudo eliminar");
+      showToast(d.error || "No se pudo eliminar", "error");
       return;
     }
+    showToast("Categoría eliminada", "success");
     await load();
   }
 

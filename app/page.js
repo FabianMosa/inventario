@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { isDemoReadonly } from "@/lib/demo";
+import { CategoryInsumos } from "@/components/CategoryInsumos";
 
 /**
  * Panel inicial: totales, alertas por stock bajo el mínimo y enlaces rápidos.
@@ -8,16 +9,11 @@ import { isDemoReadonly } from "@/lib/demo";
  */
 export default async function HomePage() {
   const readonly = isDemoReadonly();
-  const [itemCount, locationCount, movementCount, items] = await Promise.all([
-    prisma.item.count({ where: { active: true } }),
-    prisma.location.count(),
-    prisma.movement.count(),
-    prisma.item.findMany({
-      where: { active: true },
-      include: { category: true, balances: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  const items = await prisma.item.findMany({
+    where: { active: true },
+    include: { category: true, balances: true },
+    orderBy: { name: "asc" },
+  });
 
   const withTotals = items.map((i) => ({
     ...i,
@@ -68,29 +64,18 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard
-          title="Artículos activos"
-          value={itemCount}
-          accent="from-brand-500 to-indigo-600"
-        />
-        <StatCard
-          title="Ubicaciones"
-          value={locationCount}
-          accent="from-cyan-500 to-teal-600"
-        />
-        <StatCard
-          title="Movimientos"
-          value={movementCount}
-          accent="from-violet-500 to-purple-600"
-        />
-      </div>
-
       <section className="ui-card p-5 sm:p-7">
+        <h2 className="mb-4 text-lg font-bold text-slate-900">
+          Explorar por categoría
+        </h2>
+        <CategoryInsumos />
+      </section>
+
+      <section className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-soft backdrop-blur-sm sm:p-7 dark:border-amber-800/60 dark:from-amber-950/40 dark:to-slate-900">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-400"
               aria-hidden
             >
               <svg
@@ -108,11 +93,18 @@ export default async function HomePage() {
               </svg>
             </span>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
-                Alertas: stock bajo el mínimo
-              </h2>
-              <p className="text-sm text-slate-500">
-                Artículos cuyo total global no alcanza el mínimo configurado
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Alertas de stock
+                </h2>
+                {alerts.length > 0 ? (
+                  <span className="inline-flex items-center justify-center rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
+                    {alerts.length}
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Artículos cuyo stock total no alcanza el mínimo configurado
               </p>
             </div>
           </div>
@@ -121,24 +113,38 @@ export default async function HomePage() {
           </Link>
         </div>
         {alerts.length === 0 ? (
-          <p className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center text-slate-600">
-            No hay alertas en este momento. Todo en orden.
-          </p>
+          <div className="mt-6 flex items-center gap-2 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/80 px-4 py-6 text-center text-sm text-emerald-800 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-400">
+            <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>No hay alertas en este momento. Todo en orden.</span>
+          </div>
         ) : (
-          <ul className="mt-6 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/50">
+          <ul className="mt-6 divide-y divide-amber-100 rounded-xl border border-amber-200 bg-white/90 dark:divide-amber-800/40 dark:border-amber-800/50 dark:bg-slate-900/80">
             {alerts.map((i) => (
               <li
                 key={i.id}
                 className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <span className="font-semibold text-slate-900">{i.name}</span>
-                  <span className="ml-2 font-mono text-xs text-slate-500">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{i.name}</span>
+                  <span className="ml-2 font-mono text-xs text-slate-500 dark:text-slate-400">
                     {i.sku}
                   </span>
+                  {i.category ? (
+                    <span className="ml-2 inline-flex items-center rounded-full bg-amber-100/70 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                      {i.category.name}
+                    </span>
+                  ) : null}
                 </div>
-                <div className="text-sm font-medium text-amber-800">
-                  Total: {i.total} · Mínimo: {i.minStock}
+                <div className="flex items-center gap-3 text-sm font-medium">
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Stock: <span className="tabular-nums text-amber-700 dark:text-amber-400">{i.total}</span>
+                  </span>
+                  <span className="text-slate-300 dark:text-slate-600">|</span>
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Mín: {i.minStock}
+                  </span>
                 </div>
               </li>
             ))}
@@ -149,18 +155,4 @@ export default async function HomePage() {
   );
 }
 
-/** Tarjeta métrica con barra superior en gradiente para jerarquía visual */
-function StatCard({ title, value, accent }) {
-  return (
-    <div className="ui-card relative overflow-hidden p-5">
-      <div
-        className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${accent}`}
-        aria-hidden
-      />
-      <p className="text-sm font-medium text-slate-500">{title}</p>
-      <p className="mt-2 text-3xl font-extrabold tabular-nums tracking-tight text-slate-900">
-        {value}
-      </p>
-    </div>
-  );
-}
+
