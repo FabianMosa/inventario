@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { PrintButton } from "@/components/PrintButton";
 
 export const dynamic = "force-dynamic";
 
@@ -54,9 +55,7 @@ export default async function ItemLabelPage({ params }) {
       <p className="label-hint">
         <Link href={`/items/${item.id}`}>← Volver al detalle</Link>
         {" · "}
-        <button type="button" onClick={() => window.print()}>
-          Imprimir
-        </button>
+        <PrintButton />
       </p>
 
       <style>{`

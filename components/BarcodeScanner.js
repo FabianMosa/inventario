@@ -1,59 +1,73 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
- * Modal de escaneo de código de barras usando html5-qrcode.
- * Soporta EAN, UPC, Code128, Code39, etc.
+ * Modal de escaneo de código de barras usando `html5-qrcode`.
+ * Soporta EAN, UPC, Code128, Code39, ITF, Codabar y QR.
+ *
+ * Se carga la librería de forma dinámica para no incluirla en el bundle inicial
+ * (solo se descarga si el usuario abre el escáner).
+ *
  * @param {{ onDetected: (barcode: string) => void; onClose: () => void }} props
  */
 export function BarcodeScanner({ onDetected, onClose }) {
-  const containerRef = useRef(null);
-  const scannerRef = useRef(null);
+  const container_ref = useRef(null);
+  const scanner_ref = useRef(null);
+  const [error, set_error] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
     async function start() {
-      const { Html5Qrcode } = await import("html5-qrcode");
-
-      if (cancelled || !containerRef.current) return;
-
-      const scanner = new Html5Qrcode("barcode-reader");
-      scannerRef.current = scanner;
-
       try {
+        // `Html5QrcodeSupportedFormats` es un enum exportado por la librería.
+        // Antes el código intentaba `Html5Qrcode.getSupportedFormats().EAN_13`,
+        // método que no existe en esta versión, y la página crasheaba con
+        // "Cannot read properties of undefined (reading 'EAN_13')".
+        const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import(
+          "html5-qrcode"
+        );
+
+        if (cancelled || !container_ref.current) return;
+
+        const scanner = new Html5Qrcode("barcode-reader");
+        scanner_ref.current = scanner;
+
         await scanner.start(
           { facingMode: "environment" },
           {
             fps: 15,
             qrbox: { width: 280, height: 120 },
             formatsToSupport: [
-              // Formatos de código de barras más comunes
-              Html5Qrcode.getSupportedFormats().EAN_13,
-              Html5Qrcode.getSupportedFormats().EAN_8,
-              Html5Qrcode.getSupportedFormats().UPC_A,
-              Html5Qrcode.getSupportedFormats().UPC_E,
-              Html5Qrcode.getSupportedFormats().CODE_128,
-              Html5Qrcode.getSupportedFormats().CODE_39,
-              Html5Qrcode.getSupportedFormats().CODE_93,
-              Html5Qrcode.getSupportedFormats().ITF,
-              Html5Qrcode.getSupportedFormats().CODABAR,
-              Html5Qrcode.getSupportedFormats().QR_CODE,
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.CODE_93,
+              Html5QrcodeSupportedFormats.ITF,
+              Html5QrcodeSupportedFormats.CODABAR,
+              Html5QrcodeSupportedFormats.QR_CODE,
             ],
           },
-          (decodedText) => {
-            // Detectado → notificamos y paramos
+          (decoded_text) => {
             scanner.stop().catch(() => {});
-            if (!cancelled) onDetected(decodedText);
+            if (!cancelled) onDetected(decoded_text);
           },
-          () => {
-            // frame processed (no-op)
-          }
+          () => {}
         );
-      } catch {
-        // Sin permisos o error de cámara
-        if (!cancelled) onClose();
+      } catch (e) {
+        if (cancelled) return;
+        const msg =
+          e instanceof Error ? e.message : "No se pudo iniciar la cámara";
+        console.error("BarcodeScanner error:", e);
+        set_error(
+          /permission|denied|notallowed/i.test(msg)
+            ? "Permiso de cámara denegado. Habilítalo en el navegador para escanear."
+            : `No se pudo iniciar la cámara: ${msg}`
+        );
       }
     }
 
@@ -61,20 +75,32 @@ export function BarcodeScanner({ onDetected, onClose }) {
 
     return () => {
       cancelled = true;
-      scannerRef.current?.stop().catch(() => {});
+      scanner_ref.current?.stop().catch(() => {});
     };
-  }, [onDetected, onClose]);
+  }, [onDetected]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
       <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-slate-900 shadow-2xl">
         <div className="p-4 text-center text-sm text-slate-400">
-          Apuntá al código de barras del producto
+          {error ? (
+            <span className="text-red-300">{error}</span>
+          ) : (
+            "Apuntá al código de barras del producto"
+          )}
         </div>
-        <div id="barcode-reader" ref={containerRef} className="w-full aspect-[4/3]" />
+        <div
+          id="barcode-reader"
+          ref={container_ref}
+          className="w-full aspect-[4/3]"
+        />
         <div className="flex justify-center p-4">
-          <button type="button" onClick={onClose} className="ui-btn-secondary text-white border-slate-600 hover:bg-slate-800">
-            Cancelar
+          <button
+            type="button"
+            onClick={onClose}
+            className="ui-btn-secondary border-slate-600 text-white hover:bg-slate-800"
+          >
+            Cerrar
           </button>
         </div>
       </div>

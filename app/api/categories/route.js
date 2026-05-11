@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jsonError, rejectIfDemoReadonly } from "@/lib/http";
+import { LIMITS, clean_string, validation_error } from "@/lib/validation";
 
-/** Listado y alta de categorías (demo sin autenticación). */
+/** Listado de categorías con contador de artículos asociados. */
 export async function GET() {
   const rows = await prisma.category.findMany({
     orderBy: { name: "asc" },
@@ -11,6 +12,7 @@ export async function GET() {
   return NextResponse.json(rows);
 }
 
+/** Alta de categoría (demo sin autenticación). Aplica cap de longitud sobre `name`. */
 export async function POST(request) {
   const denied = rejectIfDemoReadonly();
   if (denied) return denied;
@@ -21,7 +23,16 @@ export async function POST(request) {
   } catch {
     return jsonError("JSON inválido", 400);
   }
-  const name = typeof body.name === "string" ? body.name.trim() : "";
+
+  let name;
+  try {
+    name = clean_string(body.name, LIMITS.name, "name");
+  } catch (e) {
+    if (e instanceof validation_error) {
+      return jsonError(e.message, e.code === "STRING_TOO_LONG" ? 413 : 400);
+    }
+    throw e;
+  }
   if (!name) return jsonError("El nombre es obligatorio", 400);
 
   const created = await prisma.category.create({ data: { name } });

@@ -2,15 +2,22 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jsonError, rejectIfDemoReadonly } from "@/lib/http";
 import { applyMovementTx } from "@/lib/movements";
+import {
+  LIMITS,
+  clean_string,
+  is_movement_type,
+  parse_movement_lines,
+  parse_take,
+  validation_error,
+} from "@/lib/validation";
 
-const ALLOWED = new Set(["IN", "OUT", "TRANSFER", "ADJUST"]);
-
+/**
+ * Lista los movimientos más recientes (orden descendente).
+ * `?take=` se clava entre 1 y 50.
+ */
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const take = Math.min(
-    50,
-    Math.max(1, parseInt(searchParams.get("take") || "30", 10) || 30)
-  );
+  const take = parse_take(searchParams.get("take"), { default_value: 30, max: 50 });
 
   const rows = await prisma.movement.findMany({
     take,
@@ -28,6 +35,13 @@ export async function GET(request) {
   return NextResponse.json(rows);
 }
 
+/**
+ * Crea un movimiento (IN/OUT/TRANSFER/ADJUST) en una sola transacción que
+ * también actualiza los saldos a través de `applyMovementTx`.
+ *
+ * Aplica caps de longitud sobre `reference`/`notes` y limita el número de
+ * líneas para evitar payloads abusivos en la API pública.
+ */
 export async function POST(request) {
   const denied = rejectIfDemoReadonly();
   if (denied) return denied;
@@ -39,51 +53,21 @@ export async function POST(request) {
     return jsonError("JSON inválido", 400);
   }
 
-  const type = typeof body.type === "string" ? body.type.toUpperCase() : "";
-  if (!ALLOWED.has(type)) {
+  if (!is_movement_type(body.type)) {
     return jsonError("Tipo inválido: use IN, OUT, TRANSFER o ADJUST", 400);
   }
+  const type = String(body.type).toUpperCase();
 
-  const reference =
-    body.reference == null || body.reference === ""
-      ? null
-      : String(body.reference).trim().slice(0, 200) || null;
-  const notes =
-    body.notes == null || body.notes === ""
-      ? null
-      : String(body.notes).trim().slice(0, 2000) || null;
-
-  const linesIn = Array.isArray(body.lines) ? body.lines : null;
-  if (!linesIn?.length) return jsonError("Debe incluir al menos una línea", 400);
-
-  const lines = [];
-  for (const raw of linesIn) {
-    const itemId =
-      raw.itemId && String(raw.itemId).trim() ? String(raw.itemId).trim() : "";
-    const quantity = parseInt(raw.quantity, 10);
-    const fromLocationId =
-      raw.fromLocationId && String(raw.fromLocationId).trim()
-        ? String(raw.fromLocationId).trim()
-        : null;
-    const toLocationId =
-      raw.toLocationId && String(raw.toLocationId).trim()
-        ? String(raw.toLocationId).trim()
-        : null;
-
-    if (!itemId) return jsonError("Cada línea requiere itemId", 400);
-    if (!Number.isFinite(quantity)) {
-      return jsonError("Cantidad numérica inválida", 400);
+  let reference, notes, lines;
+  try {
+    reference = clean_string(body.reference, LIMITS.reference, "reference");
+    notes = clean_string(body.notes, LIMITS.notes, "notes");
+    lines = parse_movement_lines(body.lines, type);
+  } catch (e) {
+    if (e instanceof validation_error) {
+      return jsonError(e.message, e.code === "STRING_TOO_LONG" ? 413 : 400);
     }
-    if (type !== "ADJUST" && quantity <= 0) {
-      return jsonError("Para este tipo la cantidad debe ser mayor que cero", 400);
-    }
-
-    lines.push({
-      itemId,
-      quantity,
-      fromLocationId,
-      toLocationId,
-    });
+    throw e;
   }
 
   try {

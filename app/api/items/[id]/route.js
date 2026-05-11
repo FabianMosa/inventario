@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jsonError, rejectIfDemoReadonly } from "@/lib/http";
+import {
+  LIMITS,
+  clean_string,
+  to_non_negative_int,
+  to_optional_int,
+  validation_error,
+} from "@/lib/validation";
 
+/** Devuelve un artículo con sus saldos y si tiene movimientos asociados. */
 export async function GET(_request, context) {
   const { id } = await context.params;
   const row = await prisma.item.findUnique({
@@ -21,6 +29,10 @@ export async function GET(_request, context) {
   });
 }
 
+/**
+ * Actualiza parcialmente un artículo. Solo se tocan los campos presentes en el body.
+ * Aplica los mismos caps de longitud que el POST.
+ */
 export async function PATCH(request, context) {
   const denied = rejectIfDemoReadonly();
   if (denied) return denied;
@@ -34,68 +46,51 @@ export async function PATCH(request, context) {
   }
 
   const data = {};
-  if (body.sku !== undefined) {
-    const sku = typeof body.sku === "string" ? body.sku.trim() : "";
-    if (!sku) return jsonError("SKU no puede estar vacío", 400);
-    data.sku = sku;
+  try {
+    if (body.sku !== undefined) {
+      const sku = clean_string(body.sku, LIMITS.sku, "sku");
+      if (!sku) return jsonError("SKU no puede estar vacío", 400);
+      data.sku = sku;
+    }
+    if (body.name !== undefined) {
+      const name = clean_string(body.name, LIMITS.name, "name");
+      if (!name) return jsonError("Nombre no puede estar vacío", 400);
+      data.name = name;
+    }
+    if (body.description !== undefined) {
+      data.description = clean_string(body.description, LIMITS.description, "description");
+    }
+    if (body.unit !== undefined) {
+      data.unit = clean_string(body.unit, LIMITS.unit, "unit") ?? "u";
+    }
+    if (body.minStock !== undefined) {
+      data.minStock = to_non_negative_int(body.minStock, 0);
+    }
+    if (body.maxStock !== undefined) {
+      data.maxStock = to_optional_int(body.maxStock);
+    }
+    if (body.categoryId !== undefined) {
+      data.categoryId = clean_string(body.categoryId, 64, "categoryId");
+    }
+    if (body.imageUrl !== undefined) {
+      data.imageUrl = clean_string(body.imageUrl, LIMITS.image_url, "imageUrl");
+    }
+    if (body.barcode !== undefined) {
+      data.barcode = clean_string(body.barcode, LIMITS.barcode, "barcode");
+    }
+  } catch (e) {
+    if (e instanceof validation_error) {
+      return jsonError(e.message, e.code === "STRING_TOO_LONG" ? 413 : 400);
+    }
+    throw e;
   }
-  if (body.name !== undefined) {
-    const name = typeof body.name === "string" ? body.name.trim() : "";
-    if (!name) return jsonError("Nombre no puede estar vacío", 400);
-    data.name = name;
-  }
-  if (body.description !== undefined) {
-    data.description =
-      body.description == null
-        ? null
-        : String(body.description).trim() || null;
-  }
-  if (body.unit !== undefined) {
-    data.unit =
-      typeof body.unit === "string" && body.unit.trim()
-        ? body.unit.trim()
-        : "u";
-  }
-  if (body.minStock !== undefined) {
-    data.minStock = Number.isFinite(Number(body.minStock))
-      ? Math.max(0, parseInt(body.minStock, 10))
-      : 0;
-  }
-  if (body.maxStock !== undefined) {
-    data.maxStock =
-      body.maxStock === null || body.maxStock === ""
-        ? null
-        : Number.isFinite(Number(body.maxStock))
-          ? parseInt(body.maxStock, 10)
-          : null;
-  }
-  if (body.categoryId !== undefined) {
-    data.categoryId =
-      body.categoryId && String(body.categoryId).trim()
-        ? String(body.categoryId).trim()
-        : null;
-  }
+
   if (body.active !== undefined) {
     data.active = Boolean(body.active);
   }
-  if (body.imageUrl !== undefined) {
-    data.imageUrl =
-      body.imageUrl && String(body.imageUrl).trim()
-        ? String(body.imageUrl).trim()
-        : null;
-  }
-  if (body.barcode !== undefined) {
-    data.barcode =
-      body.barcode && String(body.barcode).trim()
-        ? String(body.barcode).trim()
-        : null;
-  }
 
   try {
-    const updated = await prisma.item.update({
-      where: { id },
-      data,
-    });
+    const updated = await prisma.item.update({ where: { id }, data });
     return NextResponse.json(updated);
   } catch (e) {
     if (e.code === "P2002") return jsonError("SKU ya existe", 409);
@@ -104,6 +99,7 @@ export async function PATCH(request, context) {
   }
 }
 
+/** Elimina el artículo si no tiene movimientos registrados. */
 export async function DELETE(_request, context) {
   const denied = rejectIfDemoReadonly();
   if (denied) return denied;
