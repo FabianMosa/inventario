@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ItemForm } from "@/components/ItemForm";
 import { DeleteItemButton } from "@/components/DeleteItemButton";
 import { PageHeader } from "@/components/PageHeader";
+import { SafeImage } from "@/components/SafeImage";
 
 /** Detalle de artículo: saldos, historial reciente y edición */
 export default async function ItemDetailPage({ params }) {
@@ -72,6 +73,48 @@ export default async function ItemDetailPage({ params }) {
       {item.description ? (
         <p className="max-w-3xl text-slate-700 leading-relaxed">{item.description}</p>
       ) : null}
+
+      {/* Foto, código de barras y QR */}
+      <div className="flex flex-wrap gap-6">
+        {item.imageUrl ? (
+          <div className="ui-card overflow-hidden p-2">
+            <SafeImage
+              src={item.imageUrl}
+              alt={item.name}
+              className="max-h-64 w-full max-w-sm rounded-xl object-contain"
+            />
+          </div>
+        ) : null}
+        {item.barcode ? (
+          <div className="ui-card flex flex-col items-center gap-2 px-6 py-5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Código de barras
+            </span>
+            <span className="font-mono text-2xl font-bold tracking-wider text-slate-900">
+              {item.barcode}
+            </span>
+          </div>
+        ) : null}
+        {/* QR del artículo */}
+        <div className="ui-card flex flex-col items-center gap-2 px-5 py-4">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            QR
+          </span>
+          <SafeImage
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`/items/${item.id}`)}`}
+            alt="QR del artículo"
+            width={120}
+            height={120}
+            className="rounded-lg"
+          />
+          <Link
+            href={`/items/${item.id}/label`}
+            className="text-xs font-medium text-brand-600 hover:underline"
+          >
+            🏷️ Etiqueta imprimible
+          </Link>
+        </div>
+      </div>
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-slate-900">Por ubicación</h2>

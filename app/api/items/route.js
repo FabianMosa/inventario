@@ -12,6 +12,7 @@ export async function GET(request) {
           OR: [
             { name: { contains: q, mode: "insensitive" } },
             { sku: { contains: q, mode: "insensitive" } },
+            { barcode: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
@@ -68,6 +69,14 @@ export async function POST(request) {
     body.categoryId && String(body.categoryId).trim()
       ? String(body.categoryId).trim()
       : null;
+  const imageUrl =
+    body.imageUrl && String(body.imageUrl).trim()
+      ? String(body.imageUrl).trim()
+      : null;
+  const barcode =
+    body.barcode && String(body.barcode).trim()
+      ? String(body.barcode).trim()
+      : null;
 
   if (!sku) return jsonError("SKU es obligatorio", 400);
   if (!name) return jsonError("Nombre es obligatorio", 400);
@@ -82,11 +91,14 @@ export async function POST(request) {
         minStock,
         maxStock,
         categoryId,
+        imageUrl,
+        barcode,
       },
     });
     return NextResponse.json(created, { status: 201 });
   } catch (e) {
     if (e.code === "P2002") return jsonError("SKU ya existe", 409);
+    if (e.code === "P2003") return jsonError("Categoría no encontrada", 400);
     throw e;
   }
 }

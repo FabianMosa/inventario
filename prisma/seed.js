@@ -71,36 +71,27 @@ async function applyMovementTx(tx, payload) {
 }
 
 async function adjustBalance(tx, itemId, locationId, delta) {
-  const existing = await tx.stockBalance.findUnique({
+  await tx.stockBalance.upsert({
     where: { itemId_locationId: { itemId, locationId } },
+    update: { quantity: { increment: delta } },
+    create: { itemId, locationId, quantity: delta },
   });
-  if (existing) {
-    await tx.stockBalance.update({
-      where: { id: existing.id },
-      data: { quantity: existing.quantity + delta },
-    });
-  } else {
-    await tx.stockBalance.create({
-      data: { itemId, locationId, quantity: delta },
-    });
-  }
 }
 
 async function ensureAndSubtract(tx, itemId, locationId, qty) {
-  const existing = await tx.stockBalance.findUnique({
-    where: { itemId_locationId: { itemId, locationId } },
+  const result = await tx.stockBalance.updateMany({
+    where: { itemId, locationId, quantity: { gte: qty } },
+    data: { quantity: { decrement: qty } },
   });
-  const current = existing?.quantity ?? 0;
-  if (current < qty) {
+
+  if (result.count === 0) {
+    const existing = await tx.stockBalance.findUnique({
+      where: { itemId_locationId: { itemId, locationId } },
+    });
+    const current = existing?.quantity ?? 0;
     throw new Error(
       `Stock insuficiente para artículo ${itemId} en ubicación ${locationId} (disponible: ${current}, solicitado: ${qty})`
     );
-  }
-  if (existing) {
-    await tx.stockBalance.update({
-      where: { id: existing.id },
-      data: { quantity: current - qty },
-    });
   }
 }
 
@@ -228,6 +219,8 @@ async function main() {
       minStock: 60,
       maxStock: 200,
       categoryId: catElectr.id,
+      barcode: "7791234560011",
+      imageUrl: "https://picsum.photos/seed/hub/400/400",
     },
     {
       sku: "SKU-DEMO-002",
@@ -237,6 +230,8 @@ async function main() {
       minStock: 15,
       maxStock: 500,
       categoryId: catOfi.id,
+      barcode: "7791234560028",
+      imageUrl: "https://picsum.photos/seed/cuaderno/400/400",
     },
     {
       sku: "SKU-DEMO-003",
@@ -245,6 +240,8 @@ async function main() {
       unit: "u",
       minStock: 40,
       categoryId: catElectr.id,
+      barcode: "7791234560035",
+      imageUrl: "https://picsum.photos/seed/cable/400/400",
     },
     {
       sku: "SKU-DEMO-004",
@@ -254,6 +251,8 @@ async function main() {
       minStock: 5,
       maxStock: 40,
       categoryId: catElectr.id,
+      barcode: "7791234560042",
+      imageUrl: "https://picsum.photos/seed/teclado/400/400",
     },
     {
       sku: "SKU-DEMO-005",
@@ -262,6 +261,8 @@ async function main() {
       unit: "u",
       minStock: 12,
       categoryId: catElectr.id,
+      barcode: "7791234560059",
+      imageUrl: "https://picsum.photos/seed/mouse/400/400",
     },
     {
       sku: "SKU-DEMO-006",
@@ -270,6 +271,8 @@ async function main() {
       unit: "rollo",
       minStock: 30,
       categoryId: catEmb.id,
+      barcode: "7791234560066",
+      imageUrl: "https://picsum.photos/seed/cinta/400/400",
     },
     {
       sku: "SKU-DEMO-007",
@@ -278,6 +281,8 @@ async function main() {
       unit: "lote",
       minStock: 8,
       categoryId: catEmb.id,
+      barcode: "7791234560073",
+      imageUrl: "https://picsum.photos/seed/caja/400/400",
     },
     {
       sku: "SKU-DEMO-008",
@@ -286,6 +291,8 @@ async function main() {
       unit: "u",
       minStock: 4,
       categoryId: catCons.id,
+      barcode: "7791234560080",
+      imageUrl: "https://picsum.photos/seed/toner/400/400",
     },
     {
       sku: "SKU-DEMO-009",
@@ -294,6 +301,8 @@ async function main() {
       unit: "paq",
       minStock: 25,
       categoryId: catCons.id,
+      barcode: "7791234560097",
+      imageUrl: "https://picsum.photos/seed/pilas/400/400",
     },
     {
       sku: "SKU-DEMO-010",
@@ -302,6 +311,8 @@ async function main() {
       unit: "kit",
       minStock: 6,
       categoryId: catFerre.id,
+      barcode: "7791234560103",
+      imageUrl: "https://picsum.photos/seed/destornillador/400/400",
     },
   ];
 
@@ -316,6 +327,8 @@ async function main() {
         minStock: def.minStock,
         maxStock: def.maxStock ?? null,
         categoryId: def.categoryId,
+        barcode: def.barcode ?? null,
+        imageUrl: def.imageUrl ?? null,
         active: true,
       },
       create: {
@@ -326,6 +339,8 @@ async function main() {
         minStock: def.minStock,
         maxStock: def.maxStock ?? null,
         categoryId: def.categoryId,
+        barcode: def.barcode ?? null,
+        imageUrl: def.imageUrl ?? null,
       },
     });
     items[def.sku] = row;

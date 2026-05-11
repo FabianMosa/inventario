@@ -78,6 +78,18 @@ export async function PATCH(request, context) {
   if (body.active !== undefined) {
     data.active = Boolean(body.active);
   }
+  if (body.imageUrl !== undefined) {
+    data.imageUrl =
+      body.imageUrl && String(body.imageUrl).trim()
+        ? String(body.imageUrl).trim()
+        : null;
+  }
+  if (body.barcode !== undefined) {
+    data.barcode =
+      body.barcode && String(body.barcode).trim()
+        ? String(body.barcode).trim()
+        : null;
+  }
 
   try {
     const updated = await prisma.item.update({
@@ -87,6 +99,7 @@ export async function PATCH(request, context) {
     return NextResponse.json(updated);
   } catch (e) {
     if (e.code === "P2002") return jsonError("SKU ya existe", 409);
+    if (e.code === "P2003") return jsonError("Categoría no encontrada", 400);
     return jsonError("Artículo no encontrado", 404);
   }
 }

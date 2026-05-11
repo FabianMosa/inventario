@@ -1,5 +1,6 @@
 /**
- * Cliente Prisma falso en memoria solo para `stockBalance` (findUnique/update/create).
+ * Cliente Prisma falso en memoria solo para `stockBalance` 
+ * (findUnique/update/create/upsert/updateMany).
  * Permite probar `applyMovementTx` sin PostgreSQL.
  *
  * @param {Array<{ id?: string; itemId: string; locationId: string; quantity: number }>} initial
@@ -43,6 +44,36 @@ export function createMemoryStockTx(initial = []) {
       };
       byKey.set(compositeKey(itemId, locationId), row);
       return { ...row };
+    },
+    /** upsert atómico: crea o actualiza el saldo */
+    upsert: async ({ where: { itemId_locationId: { itemId, locationId } }, update, create }) => {
+      const k = compositeKey(itemId, locationId);
+      const existing = byKey.get(k);
+      if (existing) {
+        // update: acumula el delta
+        const delta = update.quantity.increment;
+        existing.quantity += delta;
+        return { ...existing };
+      }
+      // create
+      const row = {
+        id: `bal-${idSeq++}`,
+        itemId,
+        locationId,
+        quantity: create.quantity,
+      };
+      byKey.set(k, row);
+      return { ...row };
+    },
+    /** updateMany: descuenta solo si hay stock suficiente */
+    updateMany: async ({ where: { itemId, locationId, quantity }, data }) => {
+      const k = compositeKey(itemId, locationId);
+      const existing = byKey.get(k);
+      if (existing && existing.quantity >= quantity.gte) {
+        existing.quantity -= data.quantity.decrement;
+        return { count: 1 };
+      }
+      return { count: 0 };
     },
   };
 

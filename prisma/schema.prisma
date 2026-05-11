@@ -35,6 +35,8 @@ model Item {
   unit        String   @default("u") // unidad de medida (u, kg, caja, …)
   minStock    Int      @default(0)
   maxStock    Int?
+  imageUrl    String?  // URL web o data URL desde cámara
+  barcode     String?  // código de barras escaneado (EAN, UPC, Code128, etc.)
   active      Boolean  @default(true)
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
