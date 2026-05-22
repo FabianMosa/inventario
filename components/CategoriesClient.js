@@ -1,26 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { isDemoReadonly } from "@/lib/demo";
 import { useToast } from "@/components/ToastProvider";
 
 /** CRUD ligero de categorías vía API (demo sin login). */
-export function CategoriesClient() {
+export function CategoriesClient({ initial_rows = [] }) {
   const readonly = isDemoReadonly();
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState(initial_rows);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { showToast } = useToast();
 
-  async function load() {
+  /** Refresca la tabla tras crear o eliminar categorías. */
+  async function fetch_rows() {
     const r = await fetch("/api/categories");
     setRows(await r.json());
   }
-
-  useEffect(() => {
-    load();
-  }, []);
 
   async function onCreate(e) {
     e.preventDefault();
@@ -40,7 +37,7 @@ export function CategoriesClient() {
       }
       setName("");
       showToast("Categoría creada", "success");
-      await load();
+      await fetch_rows();
     } catch {
       setError("Error de red");
     } finally {
@@ -58,7 +55,7 @@ export function CategoriesClient() {
       return;
     }
     showToast("Categoría eliminada", "success");
-    await load();
+    await fetch_rows();
   }
 
   return (

@@ -1,12 +1,12 @@
 # Inventario (demo portafolio)
 
-Aplicación **Next.js 15** (App Router, JavaScript) + **Tailwind CSS** + **Prisma** + **PostgreSQL**. Pensada como **demo pública sin autenticación** para portafolio; despliegue recomendado en **Railway** con el plugin Postgres.
+Aplicación **Next.js 16** (App Router, JavaScript, Turbopack por defecto) + **Tailwind CSS** + **Prisma** + **PostgreSQL**. Pensada como **demo pública sin autenticación** para portafolio; despliegue recomendado en **Railway** con el plugin Postgres.
 
 Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
 
 ## Requisitos
 
-- Node.js 20+
+- Node.js **20.9.0+** (mínimo exigido por Next.js 16)
 - Base PostgreSQL (local o Railway)
 
 ## Configuración local
@@ -58,9 +58,10 @@ Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
 
 | Script               | Descripción                                   |
 | -------------------- | --------------------------------------------- |
-| `npm run dev`        | Desarrollo con Turbopack                      |
+| `npm run dev`        | Desarrollo (`next dev`; Turbopack es default en Next 16) |
 | `npm run build`      | Producción (`prisma generate` + `next build`) |
 | `npm start`          | Servidor producción                           |
+| `npm run lint`       | `eslint .` (Flat Config; `next lint` fue removido en Next 16) |
 | `npm run db:migrate` | `prisma migrate dev` (desarrollo)             |
 | `npm run db:push`    | `prisma db push` (prototipos rápidos)         |
 | `npm run db:seed`    | Datos demo (10 artículos, 4 ubicaciones, 8 movimientos; resetea solo SKUs `SKU-DEMO-*`) |
@@ -93,6 +94,7 @@ Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
   - `SafeImage.js` — Client Component que envuelve `<img>` con `onError` para fallback silencioso (necesario porque en Server Components no se pueden pasar event handlers).
 - `tailwind.config.js` — tokens de marca (`brand`) y sombras personalizadas.
 - `prisma/schema.prisma` — modelo de datos.
+- `prisma.config.mjs` — configuración Prisma CLI (`schema`, `migrations.path`, `migrations.seed`, `DATABASE_URL`); reemplaza `package.json#prisma`.
 - `lib/prisma.js` — cliente Prisma singleton.
 - `lib/movements.js` — lógica transaccional de inventario.
 - `lib/demo.js` — flag `isDemoReadonly()` según `NEXT_PUBLIC_DEMO_READONLY`.
@@ -112,36 +114,41 @@ Para defenderse de payloads abusivos en una API pública sin auth, todos los end
 
 ### Vulnerabilidades de dependencias
 
-`npm audit` (y por extensión Snyk / `app.snyk.io`) ha reportado avisos sobre `next@15.x`. A continuación, las dos olas y cómo se mitigan en este repo.
+Resumen del estado actual (post-migración a Next.js 16):
 
-**1) Release coordinada de Vercel — mayo 2026 (High)**
+**1) Release coordinada de Vercel — mayo 2026 (High) — cerrado**
 
 El 6 de mayo de 2026 Vercel publicó 13 avisos de seguridad para Next.js, varios **High**:
 
 - `CVE-2026-44574` / `GHSA-492v-c6pp-mqqv` — Middleware/Proxy bypass via dynamic route parameter injection (CVSS 8.1).
 - `CVE-2026-44575` — Middleware Authorization Bypass en App Router via `.rsc` / segment-prefetch URLs (CVSS 7.5).
-- `CVE-2026-45109` — Fix incompleto de `CVE-2026-44575` sobre `middleware.ts` con **Turbopack** (CVSS 7.5). **Aplica a este repo** porque usamos `next dev --turbopack`.
+- `CVE-2026-45109` — Fix incompleto de `CVE-2026-44575` sobre `middleware.ts` con **Turbopack** (CVSS 7.5).
 - `CVE-2026-44579` — DoS por agotamiento de conexiones en Cache Components (CVSS 7.5).
 - `CVE-2026-23870` — DoS en React Server Components (CVSS 7.5), entre otros.
 
-Todos los avisos afectan **Next.js 15.x ≤ 15.5.17** y están **parcheados en `15.5.18`** (rama 15.x, npm dist-tag `backport`) o `16.2.6` (rama 16.x, `latest`). Por eso este repo declara `"next": "^15.5.18"` y `"eslint-config-next": "^15.5.18"` como **piso** del rango: aunque el lockfile ya resuelva `15.5.18`, Snyk evalúa el rango declarado, y un piso bajo (`^15.2.4`) hace que marque la dependencia como vulnerable aunque `npm audit` esté limpio. Pinear el floor en la versión parcheada alinea ambas lecturas.
+Estos avisos afectan **Next.js 16.x ≤ 16.2.5** (y `15.x ≤ 15.5.17` en la rama de mantenimiento). Este repo está en **`next@^16.2.6`** y **`eslint-config-next@^16.2.6`**, dentro del rango parcheado. Importante: como Snyk evalúa el rango declarado en `package.json` además del lockfile, **no bajar el floor por debajo de `^16.2.6`** en ningún cambio futuro — si lo hicieras, el escáner volvería a marcar High aunque el lockfile resolviese una versión sana.
 
-**2) Avisos previos (moderate, ya cubiertos por `overrides`)**
+**2) Aviso `postcss` (moderate) — sigue mitigado**
 
-- **`GHSA-qx2v-qp2m-jg93` — PostCSS XSS via Unescaped `</style>`** (`postcss <8.5.10`, moderate, CWE-79). Llega a través del `postcss` *vendored* dentro de `next/node_modules/postcss@8.4.31`. Es un riesgo **solo en build-time** procesando CSS no confiable; en runtime no afecta a usuarios finales. El equipo de Vercel lo solucionó en canary (PR [#93288](https://github.com/vercel/next.js/pull/93288), incluido a partir de `next@16.3.0-canary.6`) y **no plan de backport a `15.x`** por considerarlo no explotable en producción.
-- **`GHSA-jxxr-4gwj-5jf2` — `brace-expansion` DoS** (`5.0.0 <5.0.6`, moderate, CWE-400). Llega vía `@typescript-eslint/typescript-estree → minimatch@10`; es una dependencia de **lint**, no de runtime.
+- **`GHSA-qx2v-qp2m-jg93` — PostCSS XSS via Unescaped `</style>`** (`postcss <8.5.10`, moderate, CWE-79). Llega a través del `postcss` *vendored* dentro de `next/node_modules/postcss@8.4.31` (también presente en `next@16.2.6`; el fix upstream entra a partir de `next@16.3.0-canary.6`). Es un riesgo **solo en build-time** procesando CSS no confiable; en runtime no afecta a usuarios finales.
 
-Mitigación aplicada en este repo en `package.json`:
+Mitigación en `package.json`:
 
 ```json
 "overrides": {
-  "postcss": "$postcss",
-  "brace-expansion": "^5.0.6"
+  "postcss": "$postcss"
 }
 ```
 
-`$postcss` reusa el rango declarado en `devDependencies` (`postcss: ^8.5.10`) y lo propaga al `postcss` anidado dentro de `next`. Tras `npm install`, `npm audit` y `npm audit --omit=dev` reportan **0 vulnerabilidades**. **No usar `npm audit fix --force`**: degrada `next` a `9.3.3` y rompe la app.
+`$postcss` reusa el rango declarado en `devDependencies` (`postcss: ^8.5.10`) y lo propaga al `postcss` anidado dentro de `next`.
 
-**Cuándo migrar a `next@16.x`**
+**3) `brace-expansion` (`GHSA-jxxr-4gwj-5jf2`) — ya no requiere override**
 
-`16.2.6` es el `latest` actual y trae los mismos parches en una rama mayor. La migración requiere revisar breaking changes (especialmente `next lint` deprecado y APIs de App Router); fuera del alcance de este repo de portafolio salvo que el lockfile se vuelva a romper.
+El aviso solo afecta a `brace-expansion` **`5.0.0–5.0.5`**. Con el nuevo árbol de dependencias post-Next.js 16:
+
+- `minimatch@3.x` usa `brace-expansion@1.1.14` (rama v1, nunca vulnerable).
+- `minimatch@10.x` (dependencia de `typescript-eslint`) usa `brace-expansion@5.0.6` (parcheada).
+
+Importante: **no reintroducir** un override `"brace-expansion": "^5.0.6"` global. Fuerza a `minimatch@3.x` a recibir la v5, cuya API es incompatible (no exporta `expand`) y rompe `eslint` con `TypeError: expand is not a function`.
+
+**Estado final**: `npm audit` y `npm audit --omit=dev` reportan **0 vulnerabilidades**. **No usar `npm audit fix --force`**: degrada `next` a `9.3.3` y rompe la app.

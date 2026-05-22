@@ -1,27 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { isDemoReadonly } from "@/lib/demo";
 import { useToast } from "@/components/ToastProvider";
 
 /** Listado y alta de ubicaciones / almacenes */
-export function LocationsClient() {
+export function LocationsClient({ initial_rows = [] }) {
   const readonly = isDemoReadonly();
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState(initial_rows);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { showToast } = useToast();
 
-  async function load() {
+  /** Refresca la tabla tras crear o eliminar ubicaciones. */
+  async function fetch_rows() {
     const r = await fetch("/api/locations");
     setRows(await r.json());
   }
-
-  useEffect(() => {
-    load();
-  }, []);
 
   async function onCreate(e) {
     e.preventDefault();
@@ -42,7 +39,7 @@ export function LocationsClient() {
       setName("");
       setCode("");
       showToast("Ubicación creada", "success");
-      await load();
+      await fetch_rows();
     } catch {
       setError("Error de red");
     } finally {
@@ -60,7 +57,7 @@ export function LocationsClient() {
       return;
     }
     showToast("Ubicación eliminada", "success");
-    await load();
+    await fetch_rows();
   }
 
   return (

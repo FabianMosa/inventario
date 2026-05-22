@@ -6,7 +6,7 @@ Este documento orienta a **agentes de IA** y a desarrolladores humanos que traba
 
 - **Aplicación web** de inventario para **portafolio**: catálogo de artículos, categorías, ubicaciones, saldos por `(artículo, ubicación)` y movimientos (entrada, salida, transferencia, ajuste).
 - **Sin autenticación**: la API y la UI son públicas si el deploy es público; no asumir usuarios ni sesiones.
-- **Stack:** Next.js 15 (App Router), **JavaScript** (no TypeScript), Tailwind CSS, Prisma, **PostgreSQL**.
+- **Stack:** Next.js 16 (App Router, Turbopack default), **JavaScript** (no TypeScript), Tailwind CSS, Prisma, **PostgreSQL**.
 
 ## Perfil y flujo de equipo IA
 
@@ -37,6 +37,7 @@ El layout usa **`export const dynamic = "force-dynamic"`** en `app/layout.js` pa
 | Validación de input de la API | `lib/validation.js` — `LIMITS` (caps de longitud), `clean_string`, `to_non_negative_int`, `to_optional_int`, `parse_take`, `clean_search_query`, `is_movement_type`, `parse_movement_lines`, `validation_error`. Las API Routes en `app/api/**` deben usar estos helpers en lugar de duplicar la normalización |
 | Reglas transaccionales de stock | `lib/movements.js` — toda mutación de saldos por movimientos debe pasar por aquí dentro de `$transaction` |
 | Esquema y migraciones | `prisma/schema.prisma`, `prisma/migrations/` (campos `Item.imageUrl` y `Item.barcode` añadidos en `20260511192903_add_image_barcode`) |
+| Config Prisma CLI | `prisma.config.mjs` — define `schema`, `migrations.path`, `migrations.seed` y `datasource.url`; no usar `package.json#prisma` |
 | Seed demo | `prisma/seed.js` — maestros + artículos `SKU-DEMO-*`; al re-ejecutar borra y recrea movimientos/saldos solo de esos SKUs (lógica de stock duplicada y alineada con `lib/movements.js`) |
 | Componentes React cliente/servidor | `components/` — incluye `BarcodeScanner`, `CameraCapture`, `FloatingScanner`, `ItemSearch` (todos `"use client"`) y `SafeImage` (wrapper cliente para `<img onError>`) |
 | Tests automatizados (Vitest, Node) | `tests/**/*.test.js` — lógica en `lib/` con mocks (p. ej. saldos en memoria); no requiere PostgreSQL |
@@ -67,10 +68,15 @@ El layout usa **`export const dynamic = "force-dynamic"`** en `app/layout.js` pa
 - **Caps de longitud (`LIMITS`)** que importan para no convertir la base en un saco de basura ni dejar la API expuesta a DoS por payload: `name=200`, `sku=100`, `description=2000`, `unit=20`, `image_url=2_000_000` (admite data URL de cámara), `barcode=200`, `code=100`, `reference=200`, `notes=2000`, `query=200`, `lines=200`. Si necesitas ampliar un cap, hazlo en `lib/validation.js` (no inline en el route) para que el cambio quede cubierto por tests.
 - Prisma parametrizado (sin SQL crudo concatenado); el buscador usa `contains` case-insensitive y `q` se recorta a `LIMITS.query`.
 - Si se añade auth más adelante, revisar con el flujo `@security-sentinel` descrito en `ai-team/`.
-- **Avisos de Snyk/`npm audit` sobre `next@15.x`**:
-  - **Release coordinada Vercel de mayo 2026 (High)** — `CVE-2026-44574`, `CVE-2026-44575`, `CVE-2026-45109` (Turbopack, aplica a este repo), `CVE-2026-44579`, `CVE-2026-23870`, entre otros. Afectan `15.x ≤ 15.5.17` y se parchean en `15.5.18`. Por eso `package.json` declara `"next": "^15.5.18"` y `"eslint-config-next": "^15.5.18"`: aunque el lockfile ya resuelva `15.5.18`, Snyk lee el **rango** declarado y un floor bajo (p. ej. `^15.2.4`) se marca como vulnerable. No bajar ese piso al actualizar dependencias.
-  - **Moderate previos** — `GHSA-qx2v-qp2m-jg93` (`postcss<8.5.10`) y `GHSA-jxxr-4gwj-5jf2` (`brace-expansion 5.0.0-5.0.5`) se mitigan con `overrides` en `package.json` (`postcss: $postcss`, `brace-expansion: ^5.0.6`). El `postcss` vulnerable solo aparece *vendored* dentro de `next` y solo se ejecuta en build-time.
-  - **Nunca** correr `npm audit fix --force`: degrada `next` a `9.3.3` y rompe la app. Si en el futuro se sube a `next@16.x` (`latest` actual = `16.2.6`), el override de `postcss` puede retirarse (la solución ya viene en upstream) y conviene revisar breaking changes (incluyendo `next lint`, deprecado). Detalle completo en `README.md` § "Vulnerabilidades de dependencias".
+- **Avisos de Snyk/`npm audit` sobre `next`**:
+  - **Release coordinada Vercel de mayo 2026 (High) — cerrada** — `CVE-2026-44574`, `CVE-2026-44575`, `CVE-2026-45109` (Turbopack), `CVE-2026-44579`, `CVE-2026-23870`, entre otros. Afectan `next@16.x ≤ 16.2.5` y `next@15.x ≤ 15.5.17`. Este repo declara `"next": "^16.2.6"` y `"eslint-config-next": "^16.2.6"` como floor. **No bajar el floor**: Snyk evalúa el rango declarado en `package.json`, y un piso vulnerable (p. ej. `^16.0.0`) reactiva la alerta High aunque el lockfile resuelva una versión sana.
+  - **Moderate `postcss`** — `GHSA-qx2v-qp2m-jg93` (`postcss<8.5.10`) se mantiene mitigado vía `overrides.postcss: $postcss` en `package.json`, porque `next@16.2.6` aún vendoriza `postcss@8.4.31` (fix upstream desde `next@16.3.0-canary.6`). Solo riesgo build-time.
+  - **`brace-expansion` (`GHSA-jxxr-4gwj-5jf2`) — sin override** — el aviso solo afecta `5.0.0–5.0.5`. En el árbol actual `minimatch@3.x` usa `brace-expansion@1.1.14` (rama v1, nunca vulnerable) y `minimatch@10.x` usa `5.0.6` (parcheada). **No reintroducir** un override `"brace-expansion": "^5.0.6"`: rompe `minimatch@3.x` con `TypeError: expand is not a function` y deja `eslint` inutilizable.
+  - **Nunca** correr `npm audit fix --force`: degrada `next` a `9.3.3` y rompe la app. Detalle completo en `README.md` § "Vulnerabilidades de dependencias".
+- **Notas operativas Next 16**:
+  - `next lint` fue removido en Next 16; el script `npm run lint` ahora ejecuta `eslint .` con flat config nativo de `eslint-config-next` (sin `FlatCompat`).
+  - Turbopack es el bundler default en `next dev` y `next build`; los scripts ya no usan `--turbopack`.
+  - Para evitar `react-hooks/set-state-in-effect`, las páginas `app/categories/page.js` y `app/locations/page.js` cargan datos iniciales en Server Components y los pasan como `initial_rows`; los Client Components solo refrescan después de crear/eliminar. En `Nav`, el ícono de tema se renderiza con clases `dark:` para evitar estado `mounted`.
 
 ## Memoria MCP (Engram)
 

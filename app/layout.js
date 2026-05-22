@@ -17,7 +17,7 @@ const fontSans = Plus_Jakarta_Sans({
 export const metadata = {
   title: "Inventario — Stock claro en un vistazo | Demo portafolio",
   description:
-    "Explora un inventario real sin login: catálogo con SKU, ubicaciones, movimientos (entrada, salida, transferencia, ajuste) y alertas de stock mínimo. Next.js 15 y PostgreSQL.",
+    "Explora un inventario real sin login: catálogo con SKU, ubicaciones, movimientos (entrada, salida, transferencia, ajuste) y alertas de stock mínimo. Next.js 16 y PostgreSQL.",
 };
 
 /** Layout raíz: tipografía moderna, navegación fija y contenedor responsive */

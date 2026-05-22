@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { isDemoReadonly } from "@/lib/demo";
-import { useEffect, useState } from "react";
 
 const allLinks = [
   { href: "/", label: "Inicio" },
@@ -34,14 +33,7 @@ function isActive(pathname, href) {
 export function Nav() {
   const pathname = usePathname();
   const links = getNavLinks();
-  const { theme, setTheme } = useTheme();
-  const [mounted, set_mounted] = useState(false);
-
-  useEffect(function () {
-    set_mounted(true);
-  }, []);
-
-  const theme_label = mounted && theme === "dark" ? "luz" : "oscuro";
+  const { resolvedTheme, setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 shadow-soft backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/80">
@@ -62,20 +54,17 @@ export function Nav() {
           <button
             type="button"
             onClick={function () {
-              setTheme(theme === "dark" ? "light" : "dark");
+              setTheme(resolvedTheme === "dark" ? "light" : "dark");
             }}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-brand-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-brand-400"
-            aria-label={"Cambiar a modo " + theme_label}
+            aria-label="Cambiar tema"
           >
-            {mounted && theme === "dark" ? (
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36 6.36l-.71-.71M6.35 6.35l-.71-.71M12 19a7 7 0 100-14 7 7 0 000 14z" />
-              </svg>
-            ) : (
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
+            <svg className="h-4 w-4 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            <svg className="hidden h-4 w-4 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36 6.36l-.71-.71M6.35 6.35l-.71-.71M12 19a7 7 0 100-14 7 7 0 000 14z" />
+            </svg>
           </button>
 
           <nav className="-mx-1 flex gap-1 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:pb-0 [&::-webkit-scrollbar]:hidden" aria-label="Principal">
