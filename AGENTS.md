@@ -67,6 +67,10 @@ El layout usa **`export const dynamic = "force-dynamic"`** en `app/layout.js` pa
 - **Caps de longitud (`LIMITS`)** que importan para no convertir la base en un saco de basura ni dejar la API expuesta a DoS por payload: `name=200`, `sku=100`, `description=2000`, `unit=20`, `image_url=2_000_000` (admite data URL de cámara), `barcode=200`, `code=100`, `reference=200`, `notes=2000`, `query=200`, `lines=200`. Si necesitas ampliar un cap, hazlo en `lib/validation.js` (no inline en el route) para que el cambio quede cubierto por tests.
 - Prisma parametrizado (sin SQL crudo concatenado); el buscador usa `contains` case-insensitive y `q` se recorta a `LIMITS.query`.
 - Si se añade auth más adelante, revisar con el flujo `@security-sentinel` descrito en `ai-team/`.
+- **Avisos de Snyk/`npm audit` sobre `next@15.x`**:
+  - **Release coordinada Vercel de mayo 2026 (High)** — `CVE-2026-44574`, `CVE-2026-44575`, `CVE-2026-45109` (Turbopack, aplica a este repo), `CVE-2026-44579`, `CVE-2026-23870`, entre otros. Afectan `15.x ≤ 15.5.17` y se parchean en `15.5.18`. Por eso `package.json` declara `"next": "^15.5.18"` y `"eslint-config-next": "^15.5.18"`: aunque el lockfile ya resuelva `15.5.18`, Snyk lee el **rango** declarado y un floor bajo (p. ej. `^15.2.4`) se marca como vulnerable. No bajar ese piso al actualizar dependencias.
+  - **Moderate previos** — `GHSA-qx2v-qp2m-jg93` (`postcss<8.5.10`) y `GHSA-jxxr-4gwj-5jf2` (`brace-expansion 5.0.0-5.0.5`) se mitigan con `overrides` en `package.json` (`postcss: $postcss`, `brace-expansion: ^5.0.6`). El `postcss` vulnerable solo aparece *vendored* dentro de `next` y solo se ejecuta en build-time.
+  - **Nunca** correr `npm audit fix --force`: degrada `next` a `9.3.3` y rompe la app. Si en el futuro se sube a `next@16.x` (`latest` actual = `16.2.6`), el override de `postcss` puede retirarse (la solución ya viene en upstream) y conviene revisar breaking changes (incluyendo `next lint`, deprecado). Detalle completo en `README.md` § "Vulnerabilidades de dependencias".
 
 ## Memoria MCP (Engram)
 
