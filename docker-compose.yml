@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: inventario
+      POSTGRES_PASSWORD: inventariopassword
+      POSTGRES_DB: inventario
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://inventario:inventariopassword@db:5432/inventario?schema=public
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    # Usamos un script para correr migraciones y luego iniciar el server
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             node server.js"
+
+volumes:
+  postgres_data:

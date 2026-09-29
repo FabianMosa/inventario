@@ -54,6 +54,47 @@ Para **agentes de IA** y convenciones del repo: **[AGENTS.md](./AGENTS.md)**.
 
    (Puedes usar la consola de Railway o un script de `release` en `package.json` si lo prefieres.)
 
+## Docker
+
+La aplicación está lista para ser construida y ejecutada en contenedores con un peso optimizado gracias al modo `standalone` de Next.js y el uso de imágenes Alpine.
+
+### Opción 1: Docker Compose (App + Base de datos)
+
+Para levantar la aplicación junto con una base de datos PostgreSQL local, usa el archivo `docker-compose.yml` incluido:
+
+```bash
+# Levantar los servicios en segundo plano
+docker-compose up -d
+
+# Ejecutar las migraciones de Prisma en el contenedor de la app
+docker-compose exec app npx --yes prisma migrate deploy
+
+# (Opcional) Cargar los datos semilla
+docker-compose exec app npm run db:seed
+```
+
+La app estará disponible en [http://localhost:3000](http://localhost:3000).
+
+### Opción 2: Solo la imagen de la aplicación
+
+Si ya tienes una base de datos externa (por ejemplo, en Railway u otro proveedor), puedes construir y correr solo la imagen de la app:
+
+```bash
+# Construir la imagen
+docker build -t inventario-app .
+
+# Correr el contenedor pasándole la URL de la base de datos
+docker run -p 3000:3000 -e DATABASE_URL="postgresql://usuario:pass@host:5432/bd" inventario-app
+```
+
+Para aplicar migraciones en la base externa usando la imagen construida:
+
+```bash
+docker run --rm -e DATABASE_URL="tu_url_aqui" inventario-app npx --yes prisma migrate deploy
+```
+
+> **Nota sobre el tamaño de la imagen:** El `Dockerfile` utiliza un proceso de **multi-stage build**. Esto asegura que el código fuente y las dependencias de desarrollo (`devDependencies`) se excluyan de la imagen final de producción, dejándola lo más liviana posible.
+
 ## Scripts npm
 
 | Script               | Descripción                                   |

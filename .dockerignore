@@ -1,0 +1,17 @@
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+README.md
+.next
+.git
+.env*
+tests
+.cursor
+.cursorrules
+.cursorignore
+openspec
+ai-team
+.github
+AGENTS.md
+STACK.md
