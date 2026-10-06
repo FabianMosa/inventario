@@ -22,10 +22,11 @@ function getNavLinks() {
   return allLinks;
 }
 
-/** Indica enlace activo: home exacto; resto coincide con ruta o subrutas */
-function isActive(pathname, href) {
+/** Indica enlace activo: home exacto; si la ruta coincide exactamente con otro enlace del nav, prioriza el exacto. */
+function isActive(pathname, href, all_link_hrefs) {
   if (href === "/") return pathname === "/";
   if (pathname === href) return true;
+  if (all_link_hrefs && all_link_hrefs.includes(pathname)) return false;
   return pathname.startsWith(href + "/");
 }
 
@@ -34,6 +35,7 @@ export function Nav() {
   const pathname = usePathname();
   const links = getNavLinks();
   const { resolvedTheme, setTheme } = useTheme();
+  const all_link_hrefs = links.map((l) => l.href);
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 shadow-soft backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/80">
@@ -69,7 +71,7 @@ export function Nav() {
 
           <nav className="-mx-1 flex gap-1 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:pb-0 [&::-webkit-scrollbar]:hidden" aria-label="Principal">
             {links.map(function (link) {
-              const active = isActive(pathname, link.href);
+              const active = isActive(pathname, link.href, all_link_hrefs);
               return (
                 <Link
                   key={link.href}

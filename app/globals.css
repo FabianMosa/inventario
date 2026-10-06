@@ -57,4 +57,12 @@ body {
   .ui-page-desc {
     @apply mt-1 text-slate-600 sm:text-[15px] dark:text-slate-400;
   }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ui-stat-card {
+    @apply relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-saas backdrop-blur-sm transition-all duration-200 hover:border-slate-300 dark:border-zinc-800/80 dark:bg-zinc-900/90 dark:hover:border-zinc-700/80;
+  }
 }

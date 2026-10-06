@@ -21,6 +21,13 @@ module.exports = {
           800: "#3730a3",
           900: "#312e81",
         },
+        zinc: {
+          950: "#09090b",
+          900: "#18181b",
+          850: "#202023",
+          800: "#27272a",
+          700: "#3f3f46",
+        },
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
@@ -31,6 +38,8 @@ module.exports = {
         card:
           "0 0 0 1px rgb(15 23 42 / 0.05), 0 18px 50px -15px rgb(79 70 229 / 0.18)",
         glow: "0 0 40px -10px rgb(99 102 241 / 0.45)",
+        saas: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        dock: "0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3)",
       },
       backgroundImage: {
         "app-mesh":
