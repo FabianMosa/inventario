@@ -58,44 +58,41 @@ jobs:
         run: npm run build
 
   # Job 2: Build & Push Docker Image to Docker Hub (Runs on push/merge to main)
-  docker-build-push:
-    name: Build & Push Docker Image
-    needs: test-and-lint
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  build-and-push:
+    needs: test               # Solo se ejecuta si las pruebas unitarias pasaron correctamente
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU for multi-architecture builds
-        uses: actions/setup-qemu-action@v3
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Buildx
-        uses: actions/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
+      - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}  # Usuario almacenado en GitHub Repository Secrets
+          password: ${{ secrets.DOCKER_PASSWORD }}  # Token/Password almacenado en GitHub Repository Secrets
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_USERNAME }}/inventario
-          tags: |
-            type=raw,value=latest
-            type=sha,format=short
+      - name: Sanitize Docker Username
+        id: prep
+        run: |
+          # Extrae el secreto de usuario y elimina comillas, espacios y dominios de email
+          RAW_USER="${{ secrets.DOCKER_USERNAME }}"
+          CLEAN_USER=$(echo "$RAW_USER" | sed "s/[[:space:]\"\']//g" | tr '[:upper:]' '[:lower:]' | cut -d'@' -f1)
+          
+          # Valida que el nombre de usuario no esté vacío
+          if [ -z "$CLEAN_USER" ]; then
+            echo "::error::El secreto DOCKER_USERNAME está vacío o no está configurado en GitHub Secrets."
+            exit 1
+          fi
+          
+          # Exporta la variable sanitizada para ser usada en los siguientes pasos
+          echo "username=${CLEAN_USER}" >> $GITHUB_OUTPUT
 
-      - name: Build and push Docker image
+      - name: Build & Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          push: true          # Sube la imagen compilada hacia el registro remoto de Docker Hub
+          tags: ${{ steps.prep.outputs.username }}/inventario:v1
