@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { DemoReadonlyBanner } from "@/components/DemoReadonlyBanner";
 import { Nav } from "@/components/Nav";
 import { ToastProvider } from "@/components/ToastProvider";
+import { Footer } from "@/components/Footer";
 import { ThemeProvider } from "next-themes";
 
 // Evita prerender estático que ejecutaría Prisma sin DATABASE_URL en el build (CI/Railway)
@@ -24,14 +25,15 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="es" suppressHydrationWarning className={fontSans.variable}>
-      <body className={`${fontSans.className} pb-16 font-sans`}>
+      <body className={`${fontSans.className} font-sans flex min-h-screen flex-col`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ToastProvider>
             <DemoReadonlyBanner />
             <Nav />
-            <main className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+            <main className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10 flex-grow w-full">
               {children}
             </main>
+            <Footer />
           </ToastProvider>
         </ThemeProvider>
       </body>

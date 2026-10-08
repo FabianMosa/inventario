@@ -14,9 +14,9 @@ export function QuickActionDock({ onOpenCommandPalette, onOpenScanner }) {
   return (
     <aside
       aria-label="Acciones rápidas"
-      className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 transform px-4"
+      className="sticky bottom-5 z-40 flex w-full justify-center px-4 pointer-events-none"
     >
-      <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white/90 p-1.5 shadow-dock backdrop-blur-md dark:border-zinc-800/90 dark:bg-zinc-900/90">
+      <div className="pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white/90 p-1.5 shadow-dock backdrop-blur-md dark:border-zinc-800/90 dark:bg-zinc-900/90">
         {onOpenCommandPalette ? (
           <button
             type="button"
