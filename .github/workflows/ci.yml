@@ -101,4 +101,4 @@ jobs:
         with:
           context: .
           push: true          # Sube la imagen compilada hacia el registro remoto de Docker Hub
-          tags: ${{ steps.prep.outputs.username }}/ecommerce_app:v1
+          tags: ${{ steps.prep.outputs.username }}/inventario_web:v1
